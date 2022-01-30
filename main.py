@@ -5,6 +5,7 @@ import discord
 from replit import db
 from keep_alive import keep_alive
 import random
+from wordStat import wordStat,emojiStat
 
 bot = commands.Bot(command_prefix = '!')
 
@@ -31,38 +32,71 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction, user):
-  if user != bot.user:   
-    print(reaction) 
-    print(user)
+  if user != bot.user:
+    
+    key = "Learning"
+    #if key in db.keys():
+      #del db[key]
+      #db[key] = []
+    
+    learning = db[key]
+
+    #if len(learning) == 0:
+      #learning.append(["",0,[]])
+
+    msg = reaction.message.content.lower()
+    words = msg.split()
+    for word in words:
+      print(word)     
+      if len(learning) == 0:
+        await addWordStat(word,1,reaction)
+      # for sublist in learning[0][0]:
+      #   print(sublist)
+      #   if word not in sublist:
+      #     reactionEmoji = [reaction.emoji,reaction.count]
+      #     print(reactionEmoji)
+      #     wordstat = [word,1,reactionEmoji]
+      #     print(wordstat)
+      #     learning.append(wordstat)
+      #   else:
+      #     wordstat = learning[word]
+      #     print(wordstat)
+        
+    #db["Learning"] = learning
+
+    print(db["Learning"])
 
 @bot.event
 async def on_message(message):
   if message.author == bot.user:
     return
-
+  
   #search in ractions list
   msg = message.content.lower()
   for key in db:
-    listtmp = db[key]
-    for word in msg.split():
-      if word in listtmp:
-        await message.add_reaction(listtmp[0])
+    if key != "Learning":
+      listtmp = db[key]
+      for word in msg.split():
+        if word in listtmp:
+          await message.add_reaction(listtmp[0])
 
   #search the reaction list's phrase in the input msg
   for key in db:
-    listtmp = db[key]
-    for word in listtmp:
-      words = word.split()
-      wordcount = len(words)
-      if wordcount > 1:
-        if msg.find(word) != -1:
-          await message.add_reaction(listtmp[0])
+    if key != "Learning": 
+      listtmp = db[key]
+      for word in listtmp:
+        words = word.split()
+        wordcount = len(words)
+        if wordcount > 1:
+          if msg.find(word) != -1:
+            await message.add_reaction(listtmp[0])
 
   #search the input msg with emoji in list
   for key in db:
-    listtmp = db[key]
-    if msg.find(listtmp[0]) != -1:
-      await message.add_reaction(listtmp[0])
+    if key != "Learning":
+      listtmp = db[key]
+      if msg.find(listtmp[0]) != -1:
+        await message.add_reaction(listtmp[0])
 
   await bot.process_commands(message)
 
@@ -74,7 +108,8 @@ async def on_message(message):
 async def list(context):
 
   for key in db:
-    print(key+": ["+ ", ".join(db[key])+"]")
+    if key != "Learning":
+      print(key+": ["+ ", ".join(db[key])+"]")
   
   msg = context.message.content
   listname = msg.split()[1] #listname
@@ -205,6 +240,15 @@ async def playSong(servername,voice_channel,song):
 
     await vc_connected.disconnect()
 
+async def addWordStat(word,count,reaction):
+  e = emojiStat(reaction.emoji,reaction.count)
+  w = wordStat(word,count)
+  w.add_emoji(e)
+  print(w)
+  l = db["Learning"]
+  l.append(w)
+  db["Learning"] = l
+
 def initSong():
   ServerName = "HuguesDiscord"
   if ServerName in db.keys():
@@ -247,7 +291,15 @@ def initSong():
   songList.append("./cantstopthefeeling.mp3")
   db[ServerName] = songList
 
+def initLearning():
+  key = "Learning"
+  if key not in db.keys():
+    db[key] = []
+  else:
+    del db[key]
+
 keep_alive()
 initSong()
+initLearning()
 
 bot.run(os.getenv('token'))
