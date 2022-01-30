@@ -32,7 +32,7 @@ async def on_ready():
 @bot.event
 async def on_reaction_add(reaction, user):
   if user != bot.user:   
-    print(reaction)
+    print(reaction) 
     print(user)
 
 @bot.event
