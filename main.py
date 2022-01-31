@@ -82,17 +82,10 @@ async def list(context):
 
   learned = jsonpickle.decode(db["Learned"])
   
-  for key in db:
-    if key != "Learning":
-      print(key+": ["+ ", ".join(db[key])+"]")
-  
   msg = context.message.content
-  listname = msg.split()[1] #listname
+  word = msg.split()[1] #word
 
-  for key in db:
-    if key == listname:
-      message = key+": ["+ ", ".join(db[key])+"]"
-      await context.author.send(message)
+  await context.author.send(learned.printlist(word))
 
 @bot.command()
 async def additem(context):
@@ -230,6 +223,9 @@ async def addword(word,word_count,reaction,learned):
       e = ws.get_emoji(reaction.emoji)
       e.word_count += word_count
       e.reaction_count += reaction.count
+
+  if word_count == 1:
+    e.isConfirmed = True
 
 def initSong():
   ServerName = "HuguesDiscord"

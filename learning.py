@@ -13,10 +13,11 @@ class learning:
       if ws.word == value:
         return ws
 
-  def printlist(self):
+  def printlist(self, word = ""):
     strtmp = ""
     for ws in self.words:
-      strtmp += "[" + ws.word + ", " + ws.printlist() + "], "
+      if ws.word == word or word == "":
+        strtmp += "[" + ws.word + ", " + ws.printlist() + "], "
     return strtmp
 
   def calculate_weight(self):
@@ -45,7 +46,7 @@ class wordStat:
   def get_top_emoji(self):
     self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
     for e in self.emojis:
-      if e.reaction_weight >= 0.5:
+      if e.reaction_weight >= 0.5 or e.isConfirmed:
         return e
 
   def contains(self,emoji):
@@ -61,7 +62,7 @@ class wordStat:
   def printlist(self):
     strtmp = ""
     for e in self.emojis:
-      strtmp += "[" + str(e.emoji) + ", word_count:" + str(e.word_count) + ", reaction_count:" + str(e.reaction_count) + ", reaction_weight:" + str(e.reaction_weight) + "], "
+      strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", isConfirmed: " + str(e.isConfirmed) + " ], "
     return strtmp
 
 class emojiStat:
@@ -75,4 +76,6 @@ class emojiStat:
     # keep the weight base on formula
     # reaction_count / word_count
     self.reaction_weight = reaction_count / word_count
+    # identify if the emoji is confirmed as right one for the wordStat
+    self.isConfirmed = False
 
