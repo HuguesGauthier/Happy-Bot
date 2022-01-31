@@ -16,7 +16,7 @@ class learning:
   def printlist(self):
     strtmp = ""
     for ws in self.words:
-      strtmp += "[" + ws.word + ", hits:" + str(ws.count) + ", " + ws.printlist() + "], "
+      strtmp += "[" + ws.word + ", " + ws.printlist() + "], "
     return strtmp
 
   def calculate_weight(self):
@@ -30,9 +30,8 @@ class learning:
     return False
 
 class wordStat: 
-  def __init__(self, word, count): 
+  def __init__(self, word): 
     self.word = word
-    self.count = count
     self.emojis = []    # creates a new empty list for each instances
   
   def add_emoji(self, emoji):
@@ -43,6 +42,12 @@ class wordStat:
       if e.emoji == value:
         return e
 
+  def get_top_emoji(self):
+    self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
+    for e in self.emojis:
+      if e.reaction_weight >= 0.5:
+        return e
+
   def contains(self,emoji):
     for e in self.emojis:
       if e.emoji == emoji:
@@ -51,16 +56,23 @@ class wordStat:
 
   def calculate_weight(self):
     for e in self.emojis:
-      e.weight = e.count * self.count
+      e.reaction_weight = e.reaction_count / e.word_count
 
   def printlist(self):
     strtmp = ""
     for e in self.emojis:
-      strtmp += "[" + e.emoji + ", hits:" + str(e.count) + ", weight:" + str(e.weight) + "], "
+      strtmp += "[" + str(e.emoji) + ", word_count:" + str(e.word_count) + ", reaction_count:" + str(e.reaction_count) + ", reaction_weight:" + str(e.reaction_weight) + "], "
     return strtmp
 
 class emojiStat:
-  def __init__(self, emoji, count ): 
-    self.emoji = emoji 
-    self.count = count
-    self.weight = 0
+  def __init__(self, emoji, word_count, reaction_count): 
+    # keep the emoji icon
+    self.emoji = emoji
+    # keep the origin word population 
+    self.word_count = word_count
+    # keep the reaction count
+    self.reaction_count = reaction_count
+    # keep the weight base on formula
+    # reaction_count / word_count
+    self.reaction_weight = reaction_count / word_count
+

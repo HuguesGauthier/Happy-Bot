@@ -33,83 +33,43 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction, user):
-  if user != bot.user:
+  if reaction.message.author.bot:
+    return
+  if user == bot.user:
+    return
     
-    key = "Learned"
-    learned = jsonpickle.decode(db[key])
-      
-    
-    #if len(learning) == 0:
-      #learning.append(["",0,[]])
+  key = "Learned"
+  learned = jsonpickle.decode(db[key])
 
-    msg = reaction.message.content.lower()
-    words = msg.split()
-    for word in words:
-      print(word)     
-      if not learned.contains(word):
-        e = emojiStat(reaction.emoji,reaction.count)
-        w = wordStat(word,1)
-        w.add_emoji(e)
-        #print(w)
-        learned.add_word(w)
-      else:
-        ws = learned.get_word(word)
-        ws.count += 1
-        if not ws.contains(reaction.emoji):
-          e = emojiStat(reaction.emoji,reaction.count)
-          ws.add_emoji(e)
-        else:
-          e = ws.get_emoji(reaction.emoji)
-          e.count += reaction.count
+  msg = reaction.message.content.lower()
+  words = msg.split()
 
-        #await addWordStat(learning,word,1,reaction)
-      # for sublist in learning[0][0]:
-      #   print(sublist)
-      #   if word not in sublist:
-      #     reactionEmoji = [reaction.emoji,reaction.count]
-      #     print(reactionEmoji)
-      #     wordstat = [word,1,reactionEmoji]
-      #     print(wordstat)
-      #     learning.append(wordstat)
-      #   else:
-      #     wordstat = learning[word]
-      #     print(wordstat)
-    
-    learned.calculate_weight()
-    obj = jsonpickle.encode(learned)
-    db[key] = obj
+  for word in words:
+    #print(word)     
+    await addword(word,len(words),reaction,learned)
+  
+  learned.calculate_weight()
+  #print(learned.printlist())
+  obj = jsonpickle.encode(learned)
+  db[key] = obj
+
 
 @bot.event
 async def on_message(message):
-  if message.author == bot.user:
+
+  if message.author.bot:
     return
   
-  #search in ractions list
+  learned = jsonpickle.decode(db["Learned"])
+  
   msg = message.content.lower()
-  for key in db:
-    if key != "Learned":
-      listtmp = db[key]
-      for word in msg.split():
-        if word in listtmp:
-          await message.add_reaction(listtmp[0])
-
-  #search the reaction list's phrase in the input msg
-  for key in db:
-    if key != "Learned": 
-      listtmp = db[key]
-      for word in listtmp:
-        words = word.split()
-        wordcount = len(words)
-        if wordcount > 1:
-          if msg.find(word) != -1:
-            await message.add_reaction(listtmp[0])
-
-  #search the input msg with emoji in list
-  for key in db:
-    if key != "Learned":
-      listtmp = db[key]
-      if msg.find(listtmp[0]) != -1:
-        await message.add_reaction(listtmp[0])
+  for word in msg.split():
+    #print(word)
+    if learned.contains(word):
+      ws = learned.get_word(word)
+      e = ws.get_top_emoji()
+      if e is not None:
+        await message.add_reaction(e.emoji)
 
   await bot.process_commands(message)
 
@@ -120,6 +80,8 @@ async def on_message(message):
 @bot.command()
 async def list(context):
 
+  learned = jsonpickle.decode(db["Learned"])
+  
   for key in db:
     if key != "Learning":
       print(key+": ["+ ", ".join(db[key])+"]")
@@ -253,23 +215,21 @@ async def playSong(servername,voice_channel,song):
 
     await vc_connected.disconnect()
 
-async def addWordStat(learning,word,count,reaction):
-  print(learning)
-  print(word)
-  print(count)
-  print(reaction)
-  e = emojiStat(reaction.emoji,reaction.count)
-  print(e.emoji)
-  print(e.count)
-  w = wordStat(word,count)
-  w.add_emoji(e)
-  print(w.word)
-  print(w.count)
-  print(w.emojis)
-  learning.append(w)
-  #l = db["Learning"]
-  #l.append(w)
-  #db["Learning"] = l
+async def addword(word,word_count,reaction,learned):
+  if not learned.contains(word):
+    e = emojiStat(reaction.emoji,word_count,reaction.count)
+    w = wordStat(word)
+    w.add_emoji(e)
+    learned.add_word(w)
+  else:
+    ws = learned.get_word(word)
+    if not ws.contains(reaction.emoji):
+      e = emojiStat(reaction.emoji,word_count,reaction.count)
+      ws.add_emoji(e)
+    else:
+      e = ws.get_emoji(reaction.emoji)
+      e.word_count += word_count
+      e.reaction_count += reaction.count
 
 def initSong():
   ServerName = "HuguesDiscord"
@@ -293,25 +253,25 @@ def initSong():
   db[ServerName] = []
   songList = db[ServerName]
   songList.append("./haha.mp3")
-  songList.append("./happy.mp3")
-  songList.append("./behappy.mp3")
-  songList.append("./freeguy.mp3")
-  songList.append("./friday.mp3")
-  songList.append("./cantstopthefeeling.mp3")
+  #songList.append("./happy.mp3")
+  #songList.append("./behappy.mp3")
+  #songList.append("./freeguy.mp3")
+  #songList.append("./friday.mp3")
+  #songList.append("./cantstopthefeeling.mp3")
   db[ServerName] = songList
 
   ServerName = "Transit"
   if ServerName in db.keys():
     del db[ServerName]
     
-  db[ServerName] = []
-  songList = db[ServerName]
-  songList.append("./happy.mp3")
-  songList.append("./behappy.mp3")
-  songList.append("./freeguy.mp3")
-  songList.append("./friday.mp3")
-  songList.append("./cantstopthefeeling.mp3")
-  db[ServerName] = songList
+  # db[ServerName] = []
+  # songList = db[ServerName]
+  # songList.append("./happy.mp3")
+  # songList.append("./behappy.mp3")
+  # songList.append("./freeguy.mp3")
+  # songList.append("./friday.mp3")
+  # songList.append("./cantstopthefeeling.mp3")
+  # db[ServerName] = songList
 
 def initLearning():
   key = "Learned"
@@ -324,17 +284,9 @@ def initLearning():
     learned = jsonpickle.decode(db[key])
     print(learned.printlist())
 
-    # e = emojiStat("poop",1)
-    # w = wordStat("caca",1)
-    # w.add_emoji(e)
-    # print(w)
-    # learned.add(w)
-
-    #print(learned)
-    #serialized = jsonpickle.encode(learned)
-    #db[key] = serialized
-
-  #del db[key]
+    # for key in db:
+    #   if key != "Learned":
+    #     del db[key]
 
 keep_alive()
 initSong()
