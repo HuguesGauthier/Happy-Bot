@@ -30,19 +30,10 @@ async def on_ready():
 
 	timer.start(bot)
 
-	print(learned.printlist())
-
-
-@bot.event
-async def on_connect():
 	global learned
 	learned = jsonpickle.decode(db["Learned"])
 
-
-@bot.event
-async def on_disconnect():
-	obj = jsonpickle.encode(learned)
-	db["Learned"] = obj
+	print(learned.printlist())
 
 
 @bot.event
@@ -65,16 +56,20 @@ async def on_message(message):
 		return
 
 	msg = message.content.lower()
-	for word in msg.split():
-		if learned.contains(word):
-			#update word hits
-			ws = learned.get_word(word)
-			ws.word_hits += 1
+	if msg[0:1] != "!":
+		for word in msg.split():
+			if learned.contains(word):
+				#update word hits
+				ws = learned.get_word(word)
+				ws.word_hits += 1
 
-			#add reaction on message
-			emojis = ws.get_top_emoji()
-			for e in emojis:
-				await message.add_reaction(e.emoji)
+				#add reaction on message
+				emojis = ws.get_top_emoji()
+				for e in emojis:
+					try:
+						await message.add_reaction(e.emoji)
+					except:
+						print("There is an emoji that this bot don't have access")
 
 	learned.calculate_weight()
 
@@ -87,7 +82,14 @@ async def on_message(message):
 #########################
 #command section
 ########################
-
+@bot.command()
+async def list(context):
+	message = learned.printlist()
+	info = (message[:3995] + '..') if len(message) > 3995 else message
+	if message != "":
+		await context.author.send(info)
+	else:
+		await context.author.send("list is empty")
 
 @bot.command()
 async def listword(context):
@@ -96,18 +98,20 @@ async def listword(context):
 		word = msg.split()[1]  #word
 		message = learned.printlist(word)
 		if message != "":
-			await context.author.send(learned.printlist(word))
+			await context.author.send(message)
 
 @bot.command()
 async def dellistword(context):
 	msg = context.message.content
 	if len(msg.split()) > 1:
 		word = msg.split()[1]  #word
-		keys = db.keys()
-		for key in keys:
-			if key == word:
-				del db[key]
+		learned.delete_word(word)
+		await context.author.send(word + " deleted !")
 
+@bot.command()
+async def clearlist(context):
+	learned.clear_word()
+	await context.author.send("list cleared !")
 
 ########################
 # function section

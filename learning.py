@@ -15,17 +15,26 @@ class learning:
 		for ws in self.words:
 			if ws.word == value:
 				return ws
+				
+	def clear_word(self):
+		self.words.clear()
 
 	def delete_word(self,value):
+		index = -1
+		c = 0
 		for ws in self.words:
 			if ws.word == value:
-				return ws
+				index = c
+				break
+			c += 1
+		if index != -1:
+			self.words.pop(index)
 
 	def printlist(self, word = ""):
 		strtmp = ""
 		for ws in self.words:
 			if ws.word == word or word == "":
-				strtmp += "[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", emojis: " + ws.printlist() + "], "
+				strtmp += "\r\n\r\n[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", emojis: " + ws.printlist() + "], "
 		return strtmp
 
 	def calculate_weight(self):
@@ -64,24 +73,23 @@ class wordStat:
 			for e in self.emojis:
 				if e.reaction_weight >= 0.5 or e.isConfirmed:
 					listtmp.append(e)
-    
 		return listtmp
 
-  def contains(self,emoji):
-    for e in self.emojis:
-      if e.emoji == emoji:
-        return True
-    return False
+	def contains(self,emoji):
+		for e in self.emojis:
+			if e.emoji == emoji:
+				return True
+		return False
 
-  def calculate_weight(self):
-    for e in self.emojis:
-      e.reaction_weight = e.reaction_count / e.word_count / self.word_hits
+	def calculate_weight(self):
+		for e in self.emojis:
+			e.reaction_weight = e.reaction_count / e.word_count / self.word_hits
 
-  def printlist(self):
-    strtmp = ""
-    for e in self.emojis:
-      strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", isConfirmed: " + str(e.isConfirmed) + " ], "
-    return strtmp
+	def printlist(self):
+		strtmp = ""
+		for e in self.emojis:
+			strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", isConfirmed: " + str(e.isConfirmed) + " ], "
+		return strtmp
 
 class emojiStat:
   def __init__(self, emoji, word_count, reaction_count): 
