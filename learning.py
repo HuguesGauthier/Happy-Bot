@@ -1,64 +1,71 @@
+# Naive Bayes
+# Naive Bayes algorithm works on Bayes theorem and takes a probabilistic approach, unlike other classification algorithms. The algorithm has a set of prior probabilities for each class. Once data is fed, the algorithm updates these probabilities to form something known as posterior probability. This comes useful when you need to predict whether the input belongs to a given list of classes or not.
+
 class learning:
-  def __init__(self): 
-    self.words = []    # creates a new empty list for each instances
+	def __init__(self): 
+		self.words = []    # creates a new empty list for each instances
 
-  def count(self):
-    return len(self.words)
+	def count(self):
+		return len(self.words)
 
-  def add_word(self,value):
-    self.words.append(value)
+	def add_word(self,value):
+		self.words.append(value)
 
-  def get_word(self,value):
-    for ws in self.words:
-      if ws.word == value:
-        return ws
+	def get_word(self,value):
+		for ws in self.words:
+			if ws.word == value:
+				return ws
 
-  def printlist(self, word = ""):
-    strtmp = ""
-    for ws in self.words:
-      if ws.word == word or word == "":
-        strtmp += "[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", emojis: " + ws.printlist() + "], "
-    return strtmp
+	def delete_word(self,value):
+		for ws in self.words:
+			if ws.word == value:
+				return ws
 
-  def calculate_weight(self):
-    for ws in self.words:
-      ws.calculate_weight()
+	def printlist(self, word = ""):
+		strtmp = ""
+		for ws in self.words:
+			if ws.word == word or word == "":
+				strtmp += "[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", emojis: " + ws.printlist() + "], "
+		return strtmp
 
-  def contains(self,word):
-    for ws in self.words:
-      if ws.word == word:
-        return True
-    return False
+	def calculate_weight(self):
+		for ws in self.words:
+			ws.calculate_weight()
+
+	def contains(self,word):
+		for ws in self.words:
+			if ws.word == word:
+				return True
+		return False
 
 class wordStat: 
-  def __init__(self, word, hits): 
-    self.word = word
-    self.word_hits = hits
-    self.emojis = []    # creates a new empty list for each instances
+	def __init__(self, word, hits):
+		self.word = word
+		self.word_hits = hits
+		self.emojis = []    # creates a new empty list for each instances
   
-  def add_emoji(self, emoji):
-    self.emojis.append(emoji)
+	def add_emoji(self, emoji):
+		self.emojis.append(emoji)
     
-  def get_emoji(self,value):
-    for e in self.emojis:
-      if e.emoji == value:
-        return e
+	def get_emoji(self,value):
+		for e in self.emojis:
+			if e.emoji == value:
+				return e
 
-  def get_top_emoji(self):
+	def get_top_emoji(self):
+		listtmp = []
+		self.emojis.sort(key=lambda emojiStat: emojiStat.isConfirmed, reverse=True)
+		for e in self.emojis:
+			if e.isConfirmed:
+				listtmp.append(e)
     
-    listtmp = []
-    self.emojis.sort(key=lambda emojiStat: emojiStat.isConfirmed, reverse=True)
-    for e in self.emojis:
-      if e.isConfirmed:
-        listtmp.append(e)
+		if len(listtmp) == 0:
+			self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
+			for e in self.emojis:
+				if e.reaction_weight >= 0.5 or e.isConfirmed:
+					listtmp.append(e)
     
-    if len(listtmp) == 0:
-      self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
-      for e in self.emojis:
-        if e.reaction_weight >= 0.5 or e.isConfirmed:
-          listtmp.append(e)
-
-    return listtmp
+		return listtmp
 
   def contains(self,emoji):
     for e in self.emojis:
