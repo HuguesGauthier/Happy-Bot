@@ -71,7 +71,7 @@ class wordStat:
 		if len(listtmp) == 0:
 			self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
 			for e in self.emojis:
-				if e.reaction_weight >= 0.5:
+				if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5:
 					listtmp.append(e)
 		return listtmp
 
@@ -84,7 +84,7 @@ class wordStat:
 	def calculate_weight(self):
 		for e in self.emojis:
 			e.reaction_appearance = e.reaction_count / self.word_hits
-			e.reaction_weight = (e.reaction_count / e.word_count) * e.reaction_appearance
+			e.reaction_weight = (e.reaction_count / e.word_count )
 
 			#if e.reaction_weight >= 1 and self.word_hits >=5:
 			#	e.isConfirmed = True
