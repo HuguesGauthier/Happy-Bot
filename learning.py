@@ -63,15 +63,15 @@ class wordStat:
 
 	def get_top_emoji(self):
 		listtmp = []
-		self.emojis.sort(key=lambda emojiStat: emojiStat.isConfirmed, reverse=True)
-		for e in self.emojis:
-			if e.isConfirmed:
-				listtmp.append(e)
+		#self.emojis.sort(key=lambda emojiStat: emojiStat.isConfirmed, reverse=True)
+		#for e in self.emojis:
+		#	if e.isConfirmed:
+		#		listtmp.append(e)
     
 		if len(listtmp) == 0:
 			self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
 			for e in self.emojis:
-				if e.reaction_weight >= 0.5 or e.isConfirmed:
+				if e.reaction_weight >= 0.5:
 					listtmp.append(e)
 		return listtmp
 
@@ -83,25 +83,33 @@ class wordStat:
 
 	def calculate_weight(self):
 		for e in self.emojis:
-			e.reaction_weight = e.reaction_count / e.word_count / self.word_hits
+			e.reaction_appearance = e.reaction_count / self.word_hits
+			e.reaction_weight = (e.reaction_count / e.word_count) * e.reaction_appearance
+
+			#if e.reaction_weight >= 1 and self.word_hits >=5:
+			#	e.isConfirmed = True
 
 	def printlist(self):
 		strtmp = ""
 		for e in self.emojis:
-			strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", isConfirmed: " + str(e.isConfirmed) + " ], "
+			strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", reaction_appearance: " + str(e.reaction_appearance) +", isConfirmed: " + str(e.isConfirmed) + " ], "
 		return strtmp
 
 class emojiStat:
   def __init__(self, emoji, word_count, reaction_count): 
-    # keep the emoji icon
-    self.emoji = emoji
-    # keep the origin word population 
-    self.word_count = word_count
-    # keep the reaction count
-    self.reaction_count = reaction_count
-    # keep the weight base on formula
-    # reaction_count / word_count
-    self.reaction_weight = reaction_count / word_count
-    # identify if the emoji is confirmed as right one for the wordStat
-    self.isConfirmed = False
 
+		# keep the emoji icon
+    self.emoji = emoji
+		# keep the sentence words count - 1
+    self.word_count = word_count
+		# keep the reaction count
+    self.reaction_count = reaction_count
+		# keep the weight base on formula
+		# (reaction_count / word_count) * self.reaction_appearance = 0
+    self.reaction_weight = 0
+		# keep the pourcentage of appearance
+		# reaction_count / word_hits
+    self.reaction_appearance = 0
+		# identify if the emoji is confirmed as right one for the wordStat
+		# the word_hits must be at least at 5
+    self.isConfirmed = False

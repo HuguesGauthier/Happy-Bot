@@ -25,16 +25,17 @@ async def timer(bot):
 #event section
 ############################
 @bot.event
+async def on_connect():
+	global learned
+	learned = jsonpickle.decode(db["Learned"])
+
+@bot.event
 async def on_ready():
 	print('Logged in as {0.user}'.format(bot))
 
 	timer.start(bot)
 
-	global learned
-	learned = jsonpickle.decode(db["Learned"])
-
 	print(learned.printlist())
-
 
 @bot.event
 async def on_reaction_add(reaction, user):
@@ -45,9 +46,12 @@ async def on_reaction_add(reaction, user):
 
 	msg = reaction.message.content.lower()
 	words = msg.split()
+	word_count = len(words)
+	if word_count > 1:
+		word_count -= 1
 
 	for word in words:
-		await addword(word, len(words), reaction)
+		await addword(word, word_count, reaction)
 
 
 @bot.event
