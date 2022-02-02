@@ -7,6 +7,7 @@ from keep_alive import keep_alive
 import random
 import jsonpickle
 from learning import learning, wordStat, emojiStat
+from datetime import date
 
 bot = commands.Bot(command_prefix='!')
 
@@ -26,8 +27,7 @@ async def timer(bot):
 ############################
 @bot.event
 async def on_connect():
-	global learned
-	learned = jsonpickle.decode(db["Learned"])
+	await deserialize()
 
 @bot.event
 async def on_ready():
@@ -47,11 +47,15 @@ async def on_reaction_add(reaction, user):
 	msg = reaction.message.content.lower()
 	words = msg.split()
 	word_count = len(words)
-	if word_count > 1:
-		word_count -= 1
 
+	# add every word
 	for word in words:
 		await addword(word, word_count, reaction)
+
+	# add sentence
+	await addword(msg, 1, reaction)
+
+	await serialize()
 
 
 @bot.event
@@ -60,28 +64,20 @@ async def on_message(message):
 		return
 
 	msg = message.content.lower()
+	# dont check if its a command "!"
 	if msg[0:1] != "!":
 		for word in msg.split():
 			if learned.contains(word):
-				#update word hits
-				ws = learned.get_word(word)
-				ws.word_hits += 1
+				await addreaction(word,message)
 
-				#add reaction on message
-				emojis = ws.get_top_emoji()
-				for e in emojis:
-					try:
-						await message.add_reaction(e.emoji)
-					except:
-						print("There is an emoji that this bot don't have access")
+		if learned.contains(msg) and len(msg.split()) > 1:
+			await addreaction(word,message)
 
 	learned.calculate_weight()
 
 	await bot.process_commands(message)
 
-	learned.calculate_weight()
-	db["Learned"] = jsonpickle.encode(learned)
-
+	await serialize()
 
 #########################
 #command section
@@ -89,7 +85,7 @@ async def on_message(message):
 @bot.command()
 async def list(context):
 	message = learned.printlist()
-	info = (message[:3995] + '..') if len(message) > 3995 else message
+	info = (message[:2000] + '..') if len(message) > 2000 else message
 	if message != "":
 		await context.author.send(info)
 	else:
@@ -99,8 +95,13 @@ async def list(context):
 async def listword(context):
 	msg = context.message.content
 	if len(msg.split()) > 1:
-		word = msg.split()[1]  #word
-		message = learned.printlist(word)
+		sentence= ""
+		c = 0
+		for word in msg.split():
+			if c > 0:
+				sentence += word + " "
+			c +=1
+		message = learned.printlist(sentence.strip())
 		if message != "":
 			await context.author.send(message)
 
@@ -108,9 +109,14 @@ async def listword(context):
 async def dellistword(context):
 	msg = context.message.content
 	if len(msg.split()) > 1:
-		word = msg.split()[1]  #word
-		learned.delete_word(word)
-		await context.author.send(word + " deleted !")
+		sentence= ""
+		c = 0
+		for word in msg.split():
+			if c > 0:
+				sentence += word + " "
+			c +=1
+		learned.delete_word(sentence.strip())
+		await context.author.send(sentence + " deleted !")
 
 @bot.command()
 async def clearlist(context):
@@ -157,11 +163,35 @@ async def addword(word, word_count, reaction):
 		else:
 			e = ws.get_emoji(reaction.emoji)
 			e.word_count += word_count
+			e.word_count_net += (word_count-1)
 			e.reaction_count += reaction.count
+			e.updatedon = date.today()
 
-	if word_count == 1:
-		e.isConfirmed = True
+async def addreaction(word,message):
+	#update word hits
+	ws = learned.get_word(word)
+	ws.word_hits += 1
+	ws.updatedon = date.today()
 
+	#add reaction on message
+	emojis = ws.get_top_emoji()
+	for e in emojis:
+		try:
+			await message.add_reaction(e.emoji)
+		except:
+			print("There is an emoji that this bot don't have access")
+
+async def serialize():
+	f = open("./learned/learned.txt", "w")
+	f.write(jsonpickle.encode(learned))
+	f.close()
+
+async def deserialize():
+	f = open("./learned/learned.txt")
+	contents = f.read()
+	f.close()
+	global learned
+	learned = jsonpickle.decode(contents)
 
 def initSong():
 	ServerName = "HuguesDiscord"
@@ -207,12 +237,16 @@ def initSong():
 
 
 def initLearning():
-	key = "Learned"
+	obj = learning()
+	f = open("./learned/learned.txt", "w")
+	f.write(jsonpickle.encode(obj))
+	f.close()
+	#key = "Learned"
 	#del db[key]
-	if key not in db.keys():
-			obj = learning()
-			serialized = jsonpickle.encode(obj)
-			db[key] = serialized
+	# if key not in db.keys():
+	# 	obj = learning()
+	# 	serialized = jsonpickle.encode(obj)
+	# 	db[key] = serialized
 	# else:
 	#     learned = jsonpickle.decode(db[key])
 	#     print(learned.printlist())
@@ -224,6 +258,6 @@ def initLearning():
 
 keep_alive()
 initSong()
-initLearning()
+#initLearning()
 
 bot.run(os.getenv('token'))
