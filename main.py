@@ -39,24 +39,24 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction, user):
-	if reaction.message.author.bot:
-		return
-	if user == bot.user:
-		return
+  if reaction.message.author.bot:
+    return
+  if user == bot.user:
+    return
 
-	msg = reaction.message.content.lower()
-	words = msg.split()
-	word_count = len(words)
+  msg = reaction.message.content.lower()
+  words = msg.split()
+  word_count = len(words)
 
-	# add every word
-	for word in words:
-		await addword(word, word_count, reaction)
+  # add every word
+  for word in words:
+    await addword(word, word_count, reaction)
 
-	# add sentence
-	await addword(msg, 1, reaction)
+  # add sentence
+  if len(msg.split()) > 1:
+    await addword(msg, 1, reaction)
 
-	await serialize()
-
+  await serialize()
 
 @bot.event
 async def on_message(message):

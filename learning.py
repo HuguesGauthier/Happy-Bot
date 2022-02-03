@@ -3,94 +3,105 @@
 from datetime import date
 
 class learning:
-	def __init__(self): 
-		self.words = []    # creates a new empty list for each instances
 
-	def count(self):
-		return len(self.words)
+  def __init__(self): 
+    self.words = []    # creates a new empty list for each instances
 
-	def add_word(self,value):
-		self.words.append(value)
+  def count(self):
+    return len(self.words)
 
-	def get_word(self,value):
-		for ws in self.words:
-			if ws.word == value:
-				return ws
-				
-	def clear_word(self):
-		self.words.clear()
+  def add_word(self,value):
+    self.words.append(value)
 
-	def delete_word(self,value):
-		index = -1
-		c = 0
-		for ws in self.words:
-			if ws.word == value:
-				index = c
-				break
-			c += 1
-		if index != -1:
-			self.words.pop(index)
+  def get_word(self,value):
+    for ws in self.words:
+      if ws.word == value:
+        return ws
+        
+  def clear_word(self):
+    self.words.clear()
 
-	def printlist(self, word = ""):
-		strtmp = ""
-		for ws in self.words:
-			if ws.word == word or word == "":
-				strtmp += "\r\n\r\n[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", createdon: " + str(ws.createdon) + ", updatedon: " + str(ws.updatedon) + ", emojis: " + ws.printlist() + "], "
-		return strtmp
+  def delete_word(self,value):
+    index = -1
+    c = 0
+    for ws in self.words:
+      if ws.word == value:
+        index = c
+        break
+      c += 1
+    if index != -1:
+      self.words.pop(index)
 
-	def calculate_weight(self):
-		for ws in self.words:
-			ws.calculate_weight()
+  def printlist(self, word = ""):
+    strtmp = ""
+    for ws in self.words:
+      if ws.word == word or word == "":
+        strtmp += "\r\n\r\n[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", createdon: " + str(ws.createdon) + ", updatedon: " + str(ws.updatedon) + ", emojis: " + ws.printlist() + "], "
+    return strtmp
 
-	def contains(self,word):
-		for ws in self.words:
-			if ws.word == word:
-				return True
-		return False
+  def calculate_weight(self):
+    for ws in self.words:
+      ws.calculate_weight()
+
+  def contains(self,word):
+    for ws in self.words:
+      if ws.word == word:
+        return True
+    return False
+
 
 class wordStat: 
 
-	def __init__(self, word, hits):
-		self.word = word
-		self.word_hits = hits
-		self.emojis = []    # creates a new empty list for each instances
-		self.createdon = date.today()
-		self.updatedon = None
-  
-	def add_emoji(self, emoji):
-		self.emojis.append(emoji)
+  def __init__(self, word, hits):
+    self.word = word
+    self.word_hits = hits
+    self.emojis = []    # creates a new empty list for each instances
+    self.createdon = date.today()
+    self.updatedon = None
+
+  def add_emoji(self, emoji):
+    self.emojis.append(emoji)
     
-	def get_emoji(self,value):
-		for e in self.emojis:
-			if e.emoji == value:
-				return e
+  def get_emoji(self,emoji):
+    if type(emoji) is not str:
+      # <:WhoMutedDJKhaled:756120713815130182>
+      emoji = "<:" + emoji.name + ":" + str(emoji.id) + ">"
+      
+    for e in self.emojis:
+      if e.emoji == emoji:
+        return e
 
-	def get_top_emoji(self):
-		listtmp = []
-		self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
-		for e in self.emojis:
-			if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5 and self.word_hits >= 3:
-				listtmp.append(e)
-		return listtmp
+  def get_top_emoji(self):
+    listtmp = []
+    self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
+    for e in self.emojis:
+      if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5 and self.word_hits >= 3:
+        listtmp.append(e)
+    return listtmp
 
-	def contains(self,emoji):
-		for e in self.emojis:
-			if e.emoji == emoji:
-				return True
-		return False
+  def contains(self,emoji):
+    if type(emoji) is not str:
+      # <:WhoMutedDJKhaled:756120713815130182>
+      emoji = "<:" + emoji.name + ":" + str(emoji.id) + ">"
+      
+    for e in self.emojis:
+      if e.emoji == emoji:
+        return True
+    return False
 
-	def calculate_weight(self):
-		for e in self.emojis:
-			e.reaction_appearance = e.reaction_count / self.word_hits
-			e.reaction_weight = (e.reaction_count / e.word_count)
+  def calculate_weight(self):
+    for e in self.emojis:
+      e.reaction_appearance = e.reaction_count / self.word_hits
+      e.reaction_weight = (e.reaction_count / e.word_count)
 
-	def printlist(self):
-		strtmp = ""
-		for e in self.emojis:
-			strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", word_count_net: " + str(e.word_count_net) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", reaction_appearance: " + str(e.reaction_appearance) + ", createdon: " + str(e.createdon) + ", updatedon: " + str(e.updatedon) + " ], "
-		return strtmp
+  def printlist(self):
+    strtmp = ""
+    for e in self.emojis:
+      strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", word_count_net: " + str(e.word_count_net) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", reaction_appearance: " + str(e.reaction_appearance) + ", createdon: " + str(e.createdon) + ", updatedon: " + str(e.updatedon) + " ], "
+    return strtmp
 
 class emojiStat:
+  
   def __init__(self, emoji, word_count, reaction_count): 
     #print(type(emoji))
     # keep the emoji icon
