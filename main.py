@@ -8,6 +8,8 @@ import random
 import jsonpickle
 from learning import learning, word, emoji
 from datetime import date
+from nltk.corpus import stopwords
+import string
 
 bot = commands.Bot(command_prefix='!')
 
@@ -32,27 +34,33 @@ async def on_connect():
 
 @bot.event
 async def on_ready():
-	print('Logged in as {0.user}'.format(bot))
+  print('Logged in as {0.user}'.format(bot))
 
-	timer.start(bot)
+  timer.start(bot)
 
-	#print(learned.printlist())
+  await get_history(bot)
+
+  learned.calculate_stats()
+
+  await serialize()
+
+  print(learned)
 
 @bot.event
 async def on_reaction_add(reaction, user):
-  if reaction.message.author.bot:
-    return
-  if user == bot.user:
-    return
+  # if reaction.message.author.bot:
+  #   return
+  # if user == bot.user:
+  #   return
 
-  content = reaction.message.content.lower()
-  words = content.split()
-  word_count = len(words)
+  # content = reaction.message.content.lower()
+  # words = content.split()
+  # word_count = len(words)
 
-  # add every word
-  for w in words:
-    if len(w) > 2:
-      await addword(w, word_count, reaction)
+  # # add every word
+  # for w in words:
+  #   if len(w) > 2:
+  #     await addword(w, word_count, reaction)
 
   await serialize()
 
@@ -68,7 +76,7 @@ async def on_message(message):
 			if learned.contains(w):
 				await addreaction(w,message)
 
-	learned.calculate_weight()
+	learned.calculate_stats()
 
 	await bot.process_commands(message)
 
@@ -77,6 +85,7 @@ async def on_message(message):
 #########################
 #command section
 ########################
+
 @bot.command()
 async def list(context):
 	message = learned.printlist()
@@ -91,9 +100,20 @@ async def listword(context):
   content = context.message.content
   words = content.split()
   if len(words) > 1:
-    message = learned.printlist(words[1])
-    if message != "":
-      await context.author.send(message)
+    wo = learned.get_word(words[1])
+    print(wo)
+    #await context.author.send(str(wo))
+
+@bot.command()
+async def get_top_hits(context):
+  content = context.message.content
+  words = content.split()
+  if len(words) > 1:
+    wo = learned.get_top_hits(int(words[1]))
+    print(wo)
+  else:
+    wo = learned.get_top_hits(1)
+    print(wo)
 
 @bot.command()
 async def dellistword(context):
@@ -134,21 +154,38 @@ async def playSong(servername, voice_channel, song):
 		await vc_connected.disconnect()
 
 
-async def addword(w, word_count, reaction):
-	if not learned.contains(w):
-		e = emoji(reaction.emoji, word_count, reaction.count)
-		wo = word(w, 1)
-		wo.add_emoji(e)
-		learned.add_word(wo)
-	else:
-		ws = learned.get_word(w)
-		if not ws.contains(reaction.emoji):
-			e = emoji(reaction.emoji, word_count, reaction.count)
-			ws.add_emoji(e)
-		else:
-			e = ws.get_emoji(reaction.emoji)
-			e.reaction_count += reaction.count
-			e.updatedon = date.today()
+async def upsert_word(message):
+
+  content = message.content.lower()
+  if content[0:5] != "https":
+    #remove ponctuation only if sentence
+    content = message.content.lower().translate(str.maketrans('', '', string.punctuation))
+    
+  words = content.split()
+  word_count = len(words)
+
+  for w in words:
+    # remote stop word
+    final_stopwords_list = stopwords.words('english') + stopwords.words('french')
+    if w not in final_stopwords_list:
+      if not learned.contains(w):
+        wo = word(message.id, w, message.created_at)
+        for r in message.reactions:
+          e = emoji(r.emoji, word_count, r.count, message.created_at)
+          wo.add_emoji(e)
+        learned.add_word(wo)
+      else:
+        ws = learned.get_word(w)
+        # to add the message id to the already existing word
+        ws.update_word(message.id, message.created_at)
+        for r in message.reactions:
+          if not ws.contains(r.emoji):
+            e = emoji(r.emoji, word_count, r.count, message.created_at)
+            ws.add_emoji(e)
+          else:
+            e = ws.get_emoji(r.emoji)
+            e.reaction_count += r.count
+            e.updatedon = message.created_at
 
 async def addreaction(w,message):
 	#update word hits
@@ -175,6 +212,19 @@ async def deserialize():
 	f.close()
 	global learned
 	learned = jsonpickle.decode(contents)
+
+async def get_history(bot):
+  #for each server the bot own
+  for server in bot.guilds:
+    if server.name in ["Transit","Happy Buds"]:
+      #for each voice channel
+      for channel in server.channels:
+        if channel.name == "general":
+          messages = await channel.history(limit=100).flatten()
+          for m in messages:
+            if m.author.bot != True:
+              #print(m)
+              await upsert_word(m)
 
 def initSong():
 	ServerName = "HuguesDiscord"
@@ -241,6 +291,6 @@ def initLearning():
 
 keep_alive()
 initSong()
-#initLearning()
+initLearning()
 
 bot.run(os.getenv('token'))

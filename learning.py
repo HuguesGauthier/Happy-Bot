@@ -1,9 +1,10 @@
 # Naive Bayes
 # Naive Bayes algorithm works on Bayes theorem and takes a probabilistic approach, unlike other classification algorithms. The algorithm has a set of prior probabilities for each class. Once data is fed, the algorithm updates these probabilities to form something known as posterior probability. This comes useful when you need to predict whether the input belongs to a given list of classes or not.
-from datetime import date
+from objprint import add_objprint
 
-class learning:
-
+@add_objprint
+class learning():
+  
   def __init__(self): 
     self.words = []    # creates a new empty list for each instances
 
@@ -32,16 +33,9 @@ class learning:
     if index != -1:
       self.words.pop(index)
 
-  def printlist(self, word = ""):
-    strtmp = ""
+  def calculate_stats(self):
     for ws in self.words:
-      if ws.word == word or word == "":
-        strtmp += "\r\n\r\n[ word: " + ws.word + ", word_hits: " + str(ws.word_hits) + ", createdon: " + str(ws.createdon) + ", updatedon: " + str(ws.updatedon) + ", emojis: " + ws.printlist() + "], "
-    return strtmp
-
-  def calculate_weight(self):
-    for ws in self.words:
-      ws.calculate_weight()
+      ws.calculate_stats()
 
   def contains(self,value):
     for ws in self.words:
@@ -49,15 +43,31 @@ class learning:
         return True
     return False
 
-#todo add message id
-class word: 
+  def get_top_hits(self, value):
+    self.words.sort(key=lambda word: word.word_hits, reverse=True)
+    for w in self.words:
+      value -= 1
+      if len(w.emojis) > 0 and value == 0:
+        return w
 
-  def __init__(self, value, hits):
+@add_objprint
+class word(): 
+
+  def __init__(self, id, value, date):
+    # message.id
+    self.ids = [id]     
+    # word of message.content
     self.word = value
-    self.word_hits = hits
+    self.word_hits = 1
     self.emojis = []    # creates a new empty list for each instances
-    self.createdon = date.today()
+    self.createdon = date
     self.updatedon = None
+
+  def update_word(self, id, date):
+    if id not in self.ids:
+      self.ids.append(id)
+      self.word_hits += 1
+      self.updatedon = date
 
   def add_emoji(self, emoji):
     self.emojis.append(emoji)
@@ -73,7 +83,7 @@ class word:
 
   def get_top_emoji(self):
     listtmp = []
-    self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
+    self.emojis.sort(key=lambda emoji: emoji.reaction_weight, reverse=True)
     for e in self.emojis:
       if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5 and self.word_hits >=3:
         listtmp.append(e)
@@ -89,20 +99,15 @@ class word:
         return True
     return False
 
-  def calculate_weight(self):
+  def calculate_stats(self):
     for e in self.emojis:
       e.reaction_appearance = e.reaction_count / self.word_hits
       e.reaction_weight = (e.reaction_count / e.word_count)
 
-  def printlist(self):
-    strtmp = ""
-    for e in self.emojis:
-      strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", word_count_net: " + str(e.word_count_net) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", reaction_appearance: " + str(e.reaction_appearance) + ", createdon: " + str(e.createdon) + ", updatedon: " + str(e.updatedon) + " ], "
-    return strtmp
-
-class emoji:
+@add_objprint
+class emoji():
   
-  def __init__(self, emoji, word_count, reaction_count): 
+  def __init__(self, emoji, word_count, reaction_count, date): 
     #print(type(emoji))
     # keep the emoji icon
     if type(emoji) is str:
@@ -122,5 +127,5 @@ class emoji:
     # keep the pourcentage of appearance
     # reaction_count / word_hits
     self.reaction_appearance = 0
-    self.createdon = date.today()
+    self.createdon = date
     self.updatedon = None
