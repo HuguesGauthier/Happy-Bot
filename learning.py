@@ -43,17 +43,17 @@ class learning:
     for ws in self.words:
       ws.calculate_weight()
 
-  def contains(self,word):
+  def contains(self,value):
     for ws in self.words:
-      if ws.word == word:
+      if ws.word == value:
         return True
     return False
 
+#todo add message id
+class word: 
 
-class wordStat: 
-
-  def __init__(self, word, hits):
-    self.word = word
+  def __init__(self, value, hits):
+    self.word = value
     self.word_hits = hits
     self.emojis = []    # creates a new empty list for each instances
     self.createdon = date.today()
@@ -75,17 +75,17 @@ class wordStat:
     listtmp = []
     self.emojis.sort(key=lambda emojiStat: emojiStat.reaction_weight, reverse=True)
     for e in self.emojis:
-      if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5 and self.word_hits >= 3:
+      if (e.reaction_weight + e.reaction_appearance) / 2 >= 0.5 and self.word_hits >=3:
         listtmp.append(e)
     return listtmp
 
-  def contains(self,emoji):
-    if type(emoji) is not str:
+  def contains(self,emo):
+    if type(emo) is not str:
       # <:WhoMutedDJKhaled:756120713815130182>
-      emoji = "<:" + emoji.name + ":" + str(emoji.id) + ">"
+      emo = "<:" + emo.name + ":" + str(emo.id) + ">"
       
     for e in self.emojis:
-      if e.emoji == emoji:
+      if e.emoji == emo:
         return True
     return False
 
@@ -100,7 +100,7 @@ class wordStat:
       strtmp += "[ " + str(e.emoji) + ", word_count: " + str(e.word_count) + ", word_count_net: " + str(e.word_count_net) + ", reaction_count: " + str(e.reaction_count) + ", reaction_weight: " + str(e.reaction_weight) + ", reaction_appearance: " + str(e.reaction_appearance) + ", createdon: " + str(e.createdon) + ", updatedon: " + str(e.updatedon) + " ], "
     return strtmp
 
-class emojiStat:
+class emoji:
   
   def __init__(self, emoji, word_count, reaction_count): 
     #print(type(emoji))

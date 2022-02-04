@@ -6,7 +6,7 @@ from replit import db
 from keep_alive import keep_alive
 import random
 import jsonpickle
-from learning import learning, wordStat, emojiStat
+from learning import learning, word, emoji
 from datetime import date
 
 bot = commands.Bot(command_prefix='!')
@@ -15,6 +15,7 @@ bot = commands.Bot(command_prefix='!')
 async def timer(bot):
 	#for each server the bot own
 	for server in bot.guilds:
+    #for each voice channel
 		for channel in server.voice_channels:
 			if len(channel.members) > 0:
 				#play ramdomly song
@@ -35,7 +36,7 @@ async def on_ready():
 
 	timer.start(bot)
 
-	print(learned.printlist())
+	#print(learned.printlist())
 
 @bot.event
 async def on_reaction_add(reaction, user):
@@ -44,17 +45,14 @@ async def on_reaction_add(reaction, user):
   if user == bot.user:
     return
 
-  msg = reaction.message.content.lower()
-  words = msg.split()
+  content = reaction.message.content.lower()
+  words = content.split()
   word_count = len(words)
 
   # add every word
-  for word in words:
-    await addword(word, word_count, reaction)
-
-  # add sentence
-  if len(msg.split()) > 1:
-    await addword(msg, 1, reaction)
+  for w in words:
+    if len(w) > 2:
+      await addword(w, word_count, reaction)
 
   await serialize()
 
@@ -63,15 +61,12 @@ async def on_message(message):
 	if message.author.bot:
 		return
 
-	msg = message.content.lower()
-	# dont check if its a command "!"
-	if msg[0:1] != "!":
-		for word in msg.split():
-			if learned.contains(word):
-				await addreaction(word,message)
-
-		if learned.contains(msg) and len(msg.split()) > 1:
-			await addreaction(word,message)
+	content = message.content.lower()
+	# dont check, if its a command "!"
+	if content[0:1] != "!":
+		for w in content.split():
+			if learned.contains(w):
+				await addreaction(w,message)
 
 	learned.calculate_weight()
 
@@ -93,30 +88,20 @@ async def list(context):
 
 @bot.command()
 async def listword(context):
-	msg = context.message.content
-	if len(msg.split()) > 1:
-		sentence= ""
-		c = 0
-		for word in msg.split():
-			if c > 0:
-				sentence += word + " "
-			c +=1
-		message = learned.printlist(sentence.strip())
-		if message != "":
-			await context.author.send(message)
+  content = context.message.content
+  words = content.split()
+  if len(words) > 1:
+    message = learned.printlist(words[1])
+    if message != "":
+      await context.author.send(message)
 
 @bot.command()
 async def dellistword(context):
-	msg = context.message.content
-	if len(msg.split()) > 1:
-		sentence= ""
-		c = 0
-		for word in msg.split():
-			if c > 0:
-				sentence += word + " "
-			c +=1
-		learned.delete_word(sentence.strip())
-		await context.author.send(sentence + " deleted !")
+  content = context.message.content
+  words = content.split()
+  if len(words) > 1:
+    learned.delete_word(words[1])
+    await context.author.send(words[1] + " deleted !")
 
 @bot.command()
 async def clearlist(context):
@@ -149,32 +134,30 @@ async def playSong(servername, voice_channel, song):
 		await vc_connected.disconnect()
 
 
-async def addword(word, word_count, reaction):
-	if not learned.contains(word):
-		e = emojiStat(reaction.emoji, word_count, reaction.count)
-		w = wordStat(word, 1)
-		w.add_emoji(e)
-		learned.add_word(w)
+async def addword(w, word_count, reaction):
+	if not learned.contains(w):
+		e = emoji(reaction.emoji, word_count, reaction.count)
+		wo = word(w, 1)
+		wo.add_emoji(e)
+		learned.add_word(wo)
 	else:
-		ws = learned.get_word(word)
+		ws = learned.get_word(w)
 		if not ws.contains(reaction.emoji):
-			e = emojiStat(reaction.emoji, word_count, reaction.count)
+			e = emoji(reaction.emoji, word_count, reaction.count)
 			ws.add_emoji(e)
 		else:
 			e = ws.get_emoji(reaction.emoji)
-			e.word_count += word_count
-			e.word_count_net += (word_count-1)
 			e.reaction_count += reaction.count
 			e.updatedon = date.today()
 
-async def addreaction(word,message):
+async def addreaction(w,message):
 	#update word hits
-	ws = learned.get_word(word)
-	ws.word_hits += 1
-	ws.updatedon = date.today()
+	wo = learned.get_word(w)
+	wo.word_hits += 1
+	wo.updatedon = date.today()
 
 	#add reaction on message
-	emojis = ws.get_top_emoji()
+	emojis = wo.get_top_emoji()
 	for e in emojis:
 		try:
 			await message.add_reaction(e.emoji)
