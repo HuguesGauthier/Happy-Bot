@@ -6,10 +6,49 @@ from objprint import add_objprint
 class learning():
   
   def __init__(self): 
-    self.words = []    # creates a new empty list for each instances
+    self.servers = []
 
-  def count(self):
-    return len(self.words)
+  def add_server(self,value):
+    self.servers.append(value)
+
+  def get_server(self,value):
+    for s in self.servers:
+      if s.name == value:
+        return s
+        
+  def clear_servers(self):
+    self.servers.clear()
+
+  def delete_server(self,value):
+    index = -1
+    c = 0
+    for s in self.servers:
+      if s.name == value:
+        index = c
+        break
+      c += 1
+    if index != -1:
+      self.servers.pop(index)
+
+  def calculate_stats(self):
+    for s in self.servers:
+      for w in s.words:
+        w.calculate_stats()
+
+  def contains(self,value):
+    for s in self.servers:
+      if s.name == value:
+        return True
+    return False
+
+@add_objprint
+class server():
+  def __init__(self, value):
+    # message.id
+    self.ids = []     
+    # word of message.content
+    self.name = value
+    self.words = []
 
   def add_word(self,value):
     self.words.append(value)
@@ -25,8 +64,8 @@ class learning():
   def delete_word(self,value):
     index = -1
     c = 0
-    for ws in self.words:
-      if ws.word == value:
+    for w in self.words:
+      if w.word == value:
         index = c
         break
       c += 1
@@ -34,28 +73,40 @@ class learning():
       self.words.pop(index)
 
   def calculate_stats(self):
-    for ws in self.words:
-      ws.calculate_stats()
+    for w in self.words:
+      w.calculate_stats()
 
   def contains(self,value):
-    for ws in self.words:
-      if ws.word == value:
+    for w in self.words:
+      if w.word == value:
         return True
     return False
 
   def get_top_hits(self, value):
     self.words.sort(key=lambda word: word.word_hits, reverse=True)
+    print(len(self.words))
+    #for w in self.words:
+      #print(w.word + ": " + str(w.word_hits))
+
     for w in self.words:
-      value -= 1
-      if len(w.emojis) > 0 and value == 0:
+      reaction = False
+      for e in w.emojis:
+        if (e.reaction_appearance + e.reaction_weight) / 2 >= 0.5:
+          print(str((e.reaction_appearance + e.reaction_weight) / 2))
+          print(e.emoji)
+          reaction = True
+      if reaction:
+        value -= 1
+      if value == 0:
         return w
 
 @add_objprint
 class word(): 
 
-  def __init__(self, id, value, date):
+  def __init__(self, id, value, date, channel):
     # message.id
-    self.ids = [id]     
+    self.ids = [id] 
+    self.channels = [channel]    
     # word of message.content
     self.word = value
     self.word_hits = 1
@@ -63,11 +114,13 @@ class word():
     self.createdon = date
     self.updatedon = None
 
-  def update_word(self, id, date):
+  def update_word(self, id, date, channel):
     if id not in self.ids:
       self.ids.append(id)
       self.word_hits += 1
       self.updatedon = date
+    if channel not in self.channels:
+      self.channels.append(channel)
 
   def add_emoji(self, emoji):
     self.emojis.append(emoji)

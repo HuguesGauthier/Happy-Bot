@@ -1,0 +1,12 @@
+stopwords_list = []
+stopwords_list.append("de")
+stopwords_list.append("c'est")
+stopwords_list.append("cest")
+stopwords_list.append('ça')
+stopwords_list.append('ca')
+stopwords_list.append('jai')
+stopwords_list.append("'j'ai")
+stopwords_list.append("l'avait")
+stopwords_list.append("plus")
+stopwords_list.append("qu'on")
+stopwords_list.append("si")

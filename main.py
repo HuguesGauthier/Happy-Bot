@@ -6,9 +6,12 @@ from replit import db
 from keep_alive import keep_alive
 import random
 import jsonpickle
-from learning import learning, word, emoji
+from learning import learning, server, word, emoji
 from datetime import date
+import nltk
 from nltk.corpus import stopwords
+from stopwords import stopwords_list
+
 import string
 
 bot = commands.Bot(command_prefix='!')
@@ -16,21 +19,23 @@ bot = commands.Bot(command_prefix='!')
 @tasks.loop(minutes=30)
 async def timer(bot):
 	#for each server the bot own
-	for server in bot.guilds:
+  for s in bot.guilds:
     #for each voice channel
-		for channel in server.voice_channels:
-			if len(channel.members) > 0:
-				#play ramdomly song
-				if len(db[server.name]) > 0:
-					await playSong(server.name, channel,
-														random.choice(db[server.name]))
+    for channel in s.voice_channels:
+      if len(channel.members) > 0:
+        #play ramdomly song
+        if s.name in db.keys:
+          if len(db[s.name]) > 0:
+            await playSong(s.name, channel,
+                            random.choice(db[s.name]))
 
 ############################
 #event section
 ############################
 @bot.event
 async def on_connect():
-	await deserialize()
+  await deserialize()
+  nltk.download('stopwords')
 
 @bot.event
 async def on_ready():
@@ -44,7 +49,7 @@ async def on_ready():
 
   await serialize()
 
-  print(learned)
+  #print(learned)
 
 @bot.event
 async def on_reaction_add(reaction, user):
@@ -66,54 +71,61 @@ async def on_reaction_add(reaction, user):
 
 @bot.event
 async def on_message(message):
-	if message.author.bot:
-		return
+  if message.author.bot:
+    return
 
-	content = message.content.lower()
-	# dont check, if its a command "!"
-	if content[0:1] != "!":
-		for w in content.split():
-			if learned.contains(w):
-				await addreaction(w,message)
+  content = message.content.lower()
+  # dont check, if its a command "!"
+  if content[0:1] != "!":
+    for w in content.split():
+      s = learned.get_server(message.guild.name)
+      if s.contains(w):
+        await addreaction(s,w,message)
 
-	learned.calculate_stats()
+  learned.calculate_stats()
 
-	await bot.process_commands(message)
+  await bot.process_commands(message)
 
-	await serialize()
+  await serialize()
 
 #########################
 #command section
 ########################
 
-@bot.command()
-async def list(context):
-	message = learned.printlist()
-	info = (message[:2000] + '..') if len(message) > 2000 else message
-	if message != "":
-		await context.author.send(info)
-	else:
-		await context.author.send("list is empty")
+# @bot.command()
+# async def list(context):
+# 	message = learned.printlist()
+# 	info = (message[:2000] + '..') if len(message) > 2000 else message
+# 	if message != "":
+# 		await context.author.send(info)
+# 	else:
+# 		await context.author.send("list is empty")
 
 @bot.command()
 async def listword(context):
   content = context.message.content
   words = content.split()
-  if len(words) > 1:
-    wo = learned.get_word(words[1])
-    print(wo)
-    #await context.author.send(str(wo))
+  if len(words) == 3:
+    for s in learned.servers:
+      print(s.name)
+      if s.name.lower() == words[1].lower():
+        wo = learned.get_word(words[1])
+        print(wo)
+        await context.author.send(str(wo))
 
 @bot.command()
 async def get_top_hits(context):
   content = context.message.content
   words = content.split()
-  if len(words) > 1:
-    wo = learned.get_top_hits(int(words[1]))
-    print(wo)
-  else:
-    wo = learned.get_top_hits(1)
-    print(wo)
+  if len(words) == 3:
+    #print("there are " + str(len(learned.servers)) + " servers")
+    for s in learned.servers:
+      print(s.name)
+      if s.name.lower() == words[1].lower().replace("_"," "):
+        wo = s.get_top_hits(int(words[2]))
+        print(wo)
+        if wo is not None:
+          await context.author.send(wo.word)
 
 @bot.command()
 async def dellistword(context):
@@ -153,43 +165,59 @@ async def playSong(servername, voice_channel, song):
 
 		await vc_connected.disconnect()
 
+async def get_history(bot):
+  #for each server the bot own
+  for s in bot.guilds:
+    so = server(s.name)
+    #for each voice channel
+    for c in s.channels:
+      if str(c.type) == 'text':
+        messages = await c.history(limit=50).flatten()
+        print(s.name + " -> " + c.name + " " + str(len(messages)))
+        for m in messages:
+          if m.author.bot != True:
+            if m.id not in so.ids:  
+              so.ids.append(m.id)
+              await upsert_word(so,c,m)
+    learned.add_server(so)
 
-async def upsert_word(message):
+async def upsert_word(srv, channel, msg):
 
-  content = message.content.lower()
+  content = msg.content.lower()
   if content[0:5] != "https":
     #remove ponctuation only if sentence
-    content = message.content.lower().translate(str.maketrans('', '', string.punctuation))
+    content = msg.content.lower().translate(str.maketrans('', '', string.punctuation))
     
   words = content.split()
   word_count = len(words)
 
   for w in words:
-    # remote stop word
+    # remove stop word
     final_stopwords_list = stopwords.words('english') + stopwords.words('french')
+    final_stopwords_list.extend(stopwords_list)
     if w not in final_stopwords_list:
-      if not learned.contains(w):
-        wo = word(message.id, w, message.created_at)
-        for r in message.reactions:
-          e = emoji(r.emoji, word_count, r.count, message.created_at)
+      if not srv.contains(w):
+        wo = word(msg.id, w, msg.created_at, channel.name)
+        for r in msg.reactions:
+          e = emoji(r.emoji, word_count, r.count, msg.created_at)
           wo.add_emoji(e)
-        learned.add_word(wo)
+        srv.add_word(wo)
       else:
-        ws = learned.get_word(w)
-        # to add the message id to the already existing word
-        ws.update_word(message.id, message.created_at)
-        for r in message.reactions:
+        ws = srv.get_word(w)
+        # to add the msg id to the already existing word
+        ws.update_word(msg.id, msg.created_at, channel.name)
+        for r in msg.reactions:
           if not ws.contains(r.emoji):
-            e = emoji(r.emoji, word_count, r.count, message.created_at)
+            e = emoji(r.emoji, word_count, r.count, msg.created_at)
             ws.add_emoji(e)
           else:
             e = ws.get_emoji(r.emoji)
             e.reaction_count += r.count
-            e.updatedon = message.created_at
+            e.updatedon = msg.created_at
 
-async def addreaction(w,message):
+async def addreaction(server,w,message):
 	#update word hits
-	wo = learned.get_word(w)
+	wo = server.get_word(w)
 	wo.word_hits += 1
 	wo.updatedon = date.today()
 
@@ -213,18 +241,6 @@ async def deserialize():
 	global learned
 	learned = jsonpickle.decode(contents)
 
-async def get_history(bot):
-  #for each server the bot own
-  for server in bot.guilds:
-    if server.name in ["Transit","Happy Buds"]:
-      #for each voice channel
-      for channel in server.channels:
-        if channel.name == "general":
-          messages = await channel.history(limit=100).flatten()
-          for m in messages:
-            if m.author.bot != True:
-              #print(m)
-              await upsert_word(m)
 
 def initSong():
 	ServerName = "HuguesDiscord"
